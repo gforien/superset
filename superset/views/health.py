@@ -17,6 +17,8 @@
 from superset import app, talisman
 from superset.superset_typing import FlaskResponse
 
+import logging
+app.logger.setLevel(logging.WARNING)
 
 @talisman(force_https=False)
 @app.route("/ping")

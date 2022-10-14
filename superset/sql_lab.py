@@ -35,6 +35,7 @@ from superset import app, results_backend, results_backend_use_msgpack, security
 from superset.common.db_query_status import QueryStatus
 from superset.dataframe import df_to_records
 from superset.db_engine_specs import BaseEngineSpec
+from superset.db_engine_specs.athena import AthenaEngineSpec
 from superset.errors import ErrorLevel, SupersetError, SupersetErrorType
 from superset.exceptions import SupersetErrorException, SupersetErrorsException
 from superset.extensions import celery_app
@@ -240,9 +241,9 @@ def execute_sql_statement(  # pylint: disable=too-many-arguments,too-many-locals
             )
         session.commit()
         with stats_timing("sqllab.query.time_executing_query", stats_logger):
-            logger.debug("Query %d: Running query: %s", query.id, sql)
+            logger.info("Query %d: Running query: %s", query.id, sql)
             db_engine_spec.execute(cursor, sql, async_=True)
-            logger.debug("Query %d: Handling cursor", query.id)
+            logger.info("Query %d: Handling cursor", query.id)
             db_engine_spec.handle_cursor(cursor, query, session)
 
         with stats_timing("sqllab.query.time_fetching_results", stats_logger):
@@ -441,7 +442,12 @@ def execute_sql_statements(  # pylint: disable=too-many-arguments, too-many-loca
     with closing(engine.raw_connection()) as conn:
         # closing the connection closes the cursor as well
         cursor = conn.cursor()
+
+        logger.warning("with closing...  calling get_cancel_query_id:")
         cancel_query_id = db_engine_spec.get_cancel_query_id(cursor, query)
+        logger.warning(f"with closing...  get_cancel_query_id: = {cancel_query_id}")
+        logger.warning(f"with closing...  get_cancel_query_id: = {query_id}")
+
         if cancel_query_id is not None:
             query.set_extra_json_key(cancel_query_key, cancel_query_id)
             session.commit()
@@ -586,12 +592,17 @@ def cancel_query(query: Query, user_name: Optional[str] = None) -> bool:
     :param user_name: Default username
     :return: True if query cancelled successfully, False otherwise
     """
+    logging.warning("CANCELLING...")
 
     if query.database.db_engine_spec.has_implicit_cancel():
         return True
 
+    # if query.database.db_engine_spec is AthenaEngineSpec:
+    #     logging.warning(f"CANCELLING... Return False")
+    #     cancel_query_id = query.database.db_engine_spec.get_cancel_query_id()
+    # else:
     cancel_query_id = query.extra.get(cancel_query_key)
-    if cancel_query_id is None:
+    if cancel_query_id is None and query.database.db_engine_spec is not AthenaEngineSpec:
         return False
 
     engine = query.database.get_sqla_engine(
@@ -603,6 +614,8 @@ def cancel_query(query: Query, user_name: Optional[str] = None) -> bool:
 
     with closing(engine.raw_connection()) as conn:
         with closing(conn.cursor()) as cursor:
+            logging.warning(f"Calling cancel_query()")
+            logging.warning(f"Calling cancel_query()")
             return query.database.db_engine_spec.cancel_query(
                 cursor, query, cancel_query_id
             )

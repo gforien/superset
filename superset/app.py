@@ -24,6 +24,25 @@ from superset.initialization import SupersetAppInitializer
 
 logger = logging.getLogger(__name__)
 
+# Silence many info logs
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+logging.getLogger('botocore').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('alembic.runtime.migration').setLevel(logging.WARNING)
+
+logger.warning("\n\n")
+logger.setLevel(logging.ERROR)
+logging.getLogger(__name__).setLevel(logging.WARNING)
+logging.getLogger('superset').setLevel(logging.WARNING)
+logging.getLogger('superset.stats_logger').setLevel(logging.WARNING)
+logging.getLogger('superset.models').setLevel(logging.WARNING)
+logging.getLogger('superset.utils.logging_configurator').setLevel(logging.WARNING)
+logging.getLogger('superset.views.base').setLevel(logging.ERROR)
+
+# Silence critical section logs
+logging.getLogger('superset.sql_parse').setLevel(logging.WARNING)
+logging.getLogger('superset.sql_lab').setLevel(logging.WARNING)
+logging.getLogger('superset.sqllab.command').setLevel(logging.WARNING)
 
 def create_app() -> Flask:
     app = SupersetApp(__name__)

@@ -45,6 +45,8 @@ def get_env_variable(var_name: str, default: Optional[str] = None) -> str:
             raise EnvironmentError(error_msg)
 
 
+SECRET_KEY = "XE9ImVkm2hIXDlVU2o3AhQUbAnBAuBxXDEotGh8FXSrNaZqhKtSVRiu0"
+
 DATABASE_DIALECT = get_env_variable("DATABASE_DIALECT")
 DATABASE_USER = get_env_variable("DATABASE_USER")
 DATABASE_PASSWORD = get_env_variable("DATABASE_PASSWORD")

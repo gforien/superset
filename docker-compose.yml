@@ -26,6 +26,10 @@ x-superset-volumes: &superset-volumes
   - ./superset-frontend:/app/superset-frontend
   - superset_home:/app/superset_home
   - ./tests:/app/tests
+x-logging-silent: &logging-silent
+  driver: none
+x-logging: &logging
+  driver: json-file
 
 version: "3.7"
 services:
@@ -37,6 +41,10 @@ services:
       - "127.0.0.1:6379:6379"
     volumes:
       - redis:/data
+    command:
+      - "--loglevel"
+      - "warning"
+    logging: *logging-silent
 
   db:
     env_file: docker/.env
@@ -47,15 +55,18 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - db_home:/var/lib/postgresql/data
+    logging: *logging-silent
 
   superset:
     env_file: docker/.env
-    image: *superset-image
+    # image: *superset-image
+    build: .
     container_name: superset_app
-    command: ["/app/docker/docker-bootstrap.sh", "app"]
+    command: ["/app/docker/docker-bootstrap.sh", "app-debug"]
     restart: unless-stopped
     ports:
       - 8088:8088
+      - 5678:5678
     user: *superset-user
     depends_on: *superset-depends-on
     volumes: *superset-volumes
@@ -89,6 +100,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_SSL=false
+    logging: *logging-silent
 
   superset-init:
     image: *superset-image
@@ -100,6 +112,7 @@ services:
     volumes: *superset-volumes
     environment:
       CYPRESS_CONFIG: "${CYPRESS_CONFIG}"
+    logging: *logging
 
   superset-node:
     image: node:16
@@ -108,6 +121,7 @@ services:
     env_file: docker/.env
     depends_on: *superset-depends-on
     volumes: *superset-volumes
+    logging: *logging-silent
 
   superset-worker:
     image: *superset-image
@@ -121,6 +135,7 @@ services:
     # Bump memory limit if processing selenium / thumbails on superset-worker
     # mem_limit: 2038m
     # mem_reservation: 128M
+    logging: *logging
 
   superset-worker-beat:
     image: *superset-image
@@ -131,6 +146,7 @@ services:
     depends_on: *superset-depends-on
     user: *superset-user
     volumes: *superset-volumes
+    logging: *logging-silent
 
   superset-tests-worker:
     image: *superset-image
@@ -147,6 +163,7 @@ services:
     depends_on: *superset-depends-on
     user: *superset-user
     volumes: *superset-volumes
+    logging: *logging-silent
 
 volumes:
   superset_home:

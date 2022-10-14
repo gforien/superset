@@ -23,6 +23,10 @@ from flask_babel import gettext as __
 from superset.db_engine_specs.base import BaseEngineSpec
 from superset.errors import SupersetErrorType
 from superset.utils import core as utils
+from superset.models.sql_lab import Query
+
+import logging
+logger = logging.getLogger(__name__)
 
 SYNTAX_ERROR_REGEX = re.compile(
     ": mismatched input '(?P<syntax_error>.*?)'. Expecting: "
@@ -86,3 +90,48 @@ class AthenaEngineSpec(BaseEngineSpec):
         :return: Conditionally mutated label
         """
         return label.lower()
+
+    @classmethod
+    def get_cancel_query_id(cls, cursor: Any, query: Query) -> Optional[str]:
+        """
+        Get Redshift PID that will be used to cancel all other running
+        queries in the same session.
+        :param cursor: Cursor instance in which the query will be executed
+        :param query: Query instance
+        :return: Redshift PID
+        """
+        logger.warning("get_cancel_query_id:")
+        try:
+            id = cursor.query_id
+            return id
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error(e)
+            return None
+
+    @classmethod
+    def cancel_query(  # pylint: disable=unused-argument
+        cls,
+        cursor: Any,
+        query: Query,
+        cancel_query_id: str,
+    ) -> bool:
+        """
+        Cancel query in the underlying database.
+        :param cursor: New cursor instance to the db of the query
+        :param query: Query instance
+        :param cancel_query_id: Value returned by get_cancel_query_payload or set in
+        other life-cycle methods of the query
+        :return: True if query cancelled successfully, False otherwise
+        """
+        logger.warning("cancel_query... Cancel_query called !!")
+        logger.warning(f"cancel_query... cursor = {cursor}")
+        try:
+            query_id = cursor.query_id
+            logger.warning(f"cancel_query... query_id = {query_id}")
+            cursor.cancel()
+            cursor.close()
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error(e)
+            return False
+
+        return False
