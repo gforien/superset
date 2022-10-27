@@ -59,8 +59,7 @@ services:
 
   superset:
     env_file: docker/.env
-    # image: *superset-image
-    build: .
+    image: *superset-image
     container_name: superset_app
     command: ["/app/docker/docker-bootstrap.sh", "app-debug"]
     restart: unless-stopped

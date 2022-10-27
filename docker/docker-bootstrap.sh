@@ -47,8 +47,9 @@ elif [[ "${1}" == "app" ]]; then
   flask run -p 8088 --with-threads --reload --debugger --host=0.0.0.0
 elif [[ "${1}" == "app-debug" ]]; then
   echo "Starting web app..."
+  pip install debugpy
+  flask run -p 8088 --with-threads --reload --debugger --host=0.0.0.0
   # debugpy app flask run -p 8088 --without-threads --reload --debugger --no-reload --host=0.0.0.0
-  echo $FLASK_APP && flask run -p 8088 --without-threads --debugger --no-reload --host=0.0.0.0
 elif [[ "${1}" == "app-gunicorn" ]]; then
   echo "Starting web app..."
   /usr/bin/run-server.sh
